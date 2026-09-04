@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rifa Pick 4</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+background:#f4f7f6;
+color:#17323a;
+}
+
+.container{
+max-width:700px;
+margin:auto;
+padding:20px;
+}
+
+.card{
+background:white;
+border-radius:20px;
+padding:25px;
+margin:18px 0;
+box-shadow:0 3px 15px rgba(0,0,0,.08);
+}
+
+h1{
+font-size:32px;
+margin-top:0;
+}
+
+h2{
+margin-top:0;
+}
+
+input{
+width:100%;
+padding:15px;
+border:1px solid #ccd5d7;
+border-radius:12px;
+font-size:17px;
+margin:7px 0 12px;
+}
+
+button{
+border:0;
+border-radius:12px;
+padding:14px 18px;
+font-size:16px;
+font-weight:bold;
+background:#087d67;
+color:white;
+cursor:pointer;
+}
+
+button:disabled{
+background:#cfd6d7;
+color:#687174;
+}
+
+.login-btn{
+width:100%;
+margin-top:5px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.logout{
+background:#555;
+padding:10px 14px;
+font-size:14px;
+}
+
+.stats{
+font-weight:bold;
+margin-bottom:15px;
+}
+
+.numbers{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:7px;
+max-height:520px;
+overflow:auto;
+}
+
+.number{
+padding:12px 3px;
+margin:0;
+font-size:14px;
+}
+
+.available{
+background:#087d67;
+}
+
+.occupied{
+background:#cfd6d7;
+}
+
+.message{
+margin-top:10px;
+font-weight:bold;
+}
+
+.admin{
+border:2px solid #087d67;
+}
+
+.hidden{
+display:none;
+}
+
+@media(min-width:600px){
+.numbers{
+grid-template-columns:repeat(10,1fr);
+}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- LOGIN -->
+<div id="loginPage" class="card">
+
+<h1>🎟️ Rifa Pick 4</h1>
+
+<p>Inicia sesión para escoger tu número.</p>
+
+<input
+id="username"
+type="text"
+placeholder="Usuario"
+autocomplete="username">
+
+<input
+id="password"
+type="password"
+placeholder="Contraseña"
+autocomplete="current-password">
+
+<button class="login-btn" onclick="login()">
+Entrar
+</button>
+
+<div id="loginMessage" class="message"></div>
+
+</div>
+
+
+<!-- APLICACIÓN -->
+<div id="appPage" class="hidden">
+
+<div class="header">
+
+<div>
+<h1>🎟️ Rifa Pick 4</h1>
+<div id="currentUser"></div>
+</div>
+
+<button class="logout" onclick="logout()">
+Salir
+</button>
+
+</div>
+
+
+<!-- ELEGIR NÚMERO -->
+<div class="card">
+
+<h2>Elegir número</h2>
+
+<p>
+Selecciona uno de los números disponibles.
+</p>
+
+<input
+id="numberInput"
+type="text"
+inputmode="numeric"
+maxlength="4"
+placeholder="Ejemplo: 0042">
+
+<button onclick="chooseNumber()">
+Elegir número
+</button>
+
+<div id="chooseMessage" class="message"></div>
+
+</div>
+
+
+<!-- NÚMEROS -->
+<div class="card">
+
+<h2>Números Pick 4</h2>
+
+<div id="stats" class="stats"></div>
+
+<div id="numbers" class="numbers"></div>
+
+</div>
+
+
+<!-- ADMINISTRACIÓN -->
+<div id="adminPage" class="card admin hidden">
+
+<h2>Administración</h2>
+
+<p>
+Desde aquí puedes crear usuarios autorizados.
+</p>
+
+<input
+id="newUsername"
+type="text"
+placeholder="Nombre del nuevo usuario">
+
+<input
+id="newPassword"
+type="password"
+placeholder="Contraseña">
+
+<button onclick="createUser()">
+Crear usuario
+</button>
+
+<div id="userMessage" class="message"></div>
+
+<hr>
+
+<h3>Usuarios autorizados</h3>
+
+<div id="userList"></div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+let currentUser = null;
+
+
+/* USUARIOS INICIALES */
+let users = JSON.parse(
+localStorage.getItem("rifaUsers")
+) || {
+
+admin:{
+password:"Rifa2026!",
+admin:true
+}
+
+};
+
+
+/* NÚMEROS OCUPADOS */
+let occupied = JSON.parse(
+localStorage.getItem("rifaNumbers")
+) || {};
+
+
+/* GUARDAR */
+function saveData(){
+
+localStorage.setItem(
+"rifaUsers",
+JSON.stringify(users)
+);
+
+localStorage.setItem(
+"rifaNumbers",
+JSON.stringify(occupied)
+);
+
+}
+
+
+/* LOGIN */
+function login(){
+
+const username =
+document.getElementById("username").value.trim();
+
+const password =
+document.getElementById("password").value;
+
+const message =
+document.getElementById("loginMessage");
+
+if(!users[username]){
+
+message.textContent =
+"Usuario no encontrado.";
+
+return;
+
+}
+
+if(users[username].password !== password){
+
+message.textContent =
+"Contraseña incorrecta.";
+
+return;
+
+}
+
+currentUser = username;
+
+document.getElementById("loginPage")
+.classList.add("hidden");
+
+document.getElementById("appPage")
+.classList.remove("hidden");
+
+document.getElementById("currentUser")
+.textContent =
+"Usuario: " + username;
+
+if(users[username].admin){
+
+document.getElementById("adminPage")
+.classList.remove("hidden");
+
+loadUsers();
+
+}
+
+loadNumbers();
+
+}
+
+
+/* SALIR */
+function logout(){
+
+currentUser = null;
+
+document.getElementById("appPage")
+.classList.add("hidden");
+
+document.getElementById("loginPage")
+.classList.remove("hidden");
+
+}
+
+
+/* MOSTRAR NÚMEROS */
+function loadNumbers(){
+
+const container =
+document.getElementById("numbers");
+
+container.innerHTML = "";
+
+let count = 0;
+
+for(let i=0;i<=9999;i++){
+
+const number =
+String(i).padStart(4,"0");
+
+const button =
+document.createElement("button");
+
+button.textContent = number;
+
+button.className =
+"number";
+
+if(occupied[number]){
+
+button.classList.add("occupied");
+
+button.disabled = true;
+
+count++;
+
+}else{
+
+button.classList.add("available");
+
+button.onclick = function(){
+
+document.getElementById("numberInput")
+.value = number;
+
+};
+
+}
+
+container.appendChild(button);
+
+}
+
+document.getElementById("stats")
+.textContent =
+count + " ocupados • " +
+(10000-count) +
+" disponibles";
+
+}
+
+
+/* ESCOGER NÚMERO */
+function chooseNumber(){
+
+const input =
+document.getElementById("numberInput");
+
+let number =
+input.value.replace(/\D/g,"");
+
+const message =
+document.getElementById("chooseMessage");
+
+if(number === ""){
+
+message.textContent =
+"Escribe o selecciona un número.";
+
+return;
+
+}
+
+number =
+String(Number(number)).padStart(4,"0");
+
+if(Number(number)<0 || Number(number)>9999){
+
+message.textContent =
+"Número inválido.";
+
+return;
+
+}
+
+if(occupied[number]){
+
+message.textContent =
+"❌ Ese número ya está ocupado.";
+
+return;
+
+}
+
+occupied[number] = currentUser;
+
+saveData();
+
+message.textContent =
+"✅ Número " + number +
+" reservado correctamente.";
+
+input.value = "";
+
+loadNumbers();
+
+}
+
+
+/* CREAR USUARIO */
+function createUser(){
+
+if(!users[currentUser].admin){
+
+return;
+
+}
+
+const username =
+document.getElementById("newUsername")
+.value.trim();
+
+const password =
+document.getElementById("newPassword")
+.value;
+
+const message =
+document.getElementById("userMessage");
+
+if(!username || !password){
+
+message.textContent =
+"Completa usuario y contraseña.";
+
+return;
+
+}
+
+if(password.length < 8){
+
+message.textContent =
+"La contraseña debe tener al menos 8 caracteres.";
+
+return;
+
+}
+
+if(users[username]){
+
+message.textContent =
+"Ese usuario ya existe.";
+
+return;
+
+}
+
+users[username] = {
+
+password:password,
+admin:false
+
+};
+
+saveData();
+
+document.getElementById("newUsername")
+.value="";
+
+document.getElementById("newPassword")
+.value="";
+
+message.textContent =
+"✅ Usuario creado correctamente.";
+
+loadUsers();
+
+}
+
+
+/* LISTA DE USUARIOS */
+function loadUsers(){
+
+const list =
+document.getElementById("userList");
+
+list.innerHTML="";
+
+Object.keys(users).forEach(function(username){
+
+const div =
+document.createElement("div");
+
+div.style.padding="8px 0";
+
+div.textContent =
+username +
+(users[username].admin
+? " — Administrador"
+: " — Usuario");
+
+list.appendChild(div);
+
+});
+
+}
+
+</script>
+
+</body>
+</html>
