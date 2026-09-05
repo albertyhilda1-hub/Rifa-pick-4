@@ -309,10 +309,40 @@ message.textContent = "Escribe usuario y contraseña.";
 return;
 }
 
+/* ADMINISTRADOR Y USUARIOS ANTIGUOS */
+if(users[username]){
+
+if(users[username].password !== password){
+message.textContent = "Contraseña incorrecta.";
+return;
+}
+
+currentUser = username;
+
+document.getElementById("loginPage")
+.classList.add("hidden");
+
+document.getElementById("appPage")
+.classList.remove("hidden");
+
+document.getElementById("currentUser")
+.textContent = "Usuario: " + username;
+
+if(users[username].admin){
+document.getElementById("adminPage")
+.classList.remove("hidden");
+loadUsers();
+}
+
+loadNumbers();
+return;
+}
+
+/* USUARIOS DE SUPABASE */
 const email =
 username.toLowerCase() + "@rifa.com";
 
-const { data, error } =
+const { error } =
 await supabase.auth.signInWithPassword({
 email: email,
 password: password
@@ -333,15 +363,6 @@ document.getElementById("appPage")
 
 document.getElementById("currentUser")
 .textContent = "Usuario: " + username;
-
-if(users[username] && users[username].admin){
-
-document.getElementById("adminPage")
-.classList.remove("hidden");
-
-loadUsers();
-
-}
 
 loadNumbers();
 
